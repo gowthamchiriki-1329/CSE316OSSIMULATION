@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Process structure
+typedef struct {
+    char process_id;
+    int priority; // 0 is the highest priority
+    int burst_time;
+    int remaining_time;
+    int arrival_time;
+} Process;
+
+// Node structure for the queue
+typedef struct Node {
+    Process data;
+    struct Node* next;
+} Node;
+
+// Function to enqueue a process
+void enqueue(Node** queue, Process process) {
+    Node* new_node = (Node*)malloc(sizeof(Node));
+    new_node->data = process;
+    new_node->next = NULL;
+
+    if (*queue == NULL) {
+        *queue = new_node;
+    } else {
+        Node* current = *queue;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_node;
+    }
+}
+
+// Function to dequeue a process
+Process dequeue(Node** queue) {
+    if (*queue == NULL) {
+        Process empty_process = { ' ', -1, -1, -1, -1 };
+        return empty_process;
+    }
+
+    Node* temp = *queue;
+    Process process = temp->data;
+    *queue = temp->next;
+    free(temp);
+
+    return process;
+}
+
+int main() {
+    Node* queue1 = NULL; // Level 1 queue
+    Node* queue2 = NULL; // Level 2 queue
+
+    int num_processes;
+    printf("Enter the number of processes: ");
+    scanf("%d", &num_processes);
+
+    // Input burst times, priorities, and arrival times for each process
+    for (int i = 0; i < num_processes; i++) {
+        Process process;
+        process.process_id = 'A' + i;
+        printf("Enter priority for process P%c: ", process.process_id);
+        scanf("%d", &process.priority);
+        printf("Enter burst time for process P%c: ", process.process_id);
+        scanf("%d", &process.burst_time);
+        printf("Enter arrival time for process P%c: ", process.process_id);
+        scanf("%d", &process.arrival_time);
+        process.remaining_time = process.burst_time;
+
+        if (process.priority == 0) {
+            enqueue(&queue1, process);
+        } else {
+            enqueue(&queue2, process);
+        }
+    }
+
+    int time_quantum;
+    printf("Enter the time quantum (unit of time) for Level 2: ");
+    scanf("%d", &time_quantum);
+
+    int current_time = 0;
+
+    printf("Scheduling:\n");
+
+    while (1) {
+        if (queue1 != NULL) {
+            Process process = dequeue(&queue1);
+            int execute_time = (process.remaining_time >= time_quantum) ? time_quantum : process.remaining_time;
+            for (int i = 0; i < execute_time; i++) {
+                printf("Process %c for %dms\n", process.process_id, 1);
+                current_time += 1;
+            }
+
+            process.remaining_time -= execute_time;
+            if (process.remaining_time > 0) {
+                enqueue(&queue1, process);
+            }
+        } else if (queue2 != NULL) {
+            Process process = dequeue(&queue2);
+            int execute_time = (process.remaining_time >= time_quantum) ? time_quantum : process.remaining_time;
+            for (int i = 0; i < execute_time; i++) {
+                printf("Process %c for %dms\n", process.process_id, 1);
+                current_time += 1;
+            }
+
+            process.remaining_time -= execute_time;
+            if (process.remaining_time > 0) {
+                enqueue(&queue2, process);
+            }
+        } else {
+            break;
+        }
+    }
+
+    printf("\n");
+
+    return 0;
+}
